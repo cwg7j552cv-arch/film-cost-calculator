@@ -32,18 +32,23 @@
   .brand h1{font-family:var(--ui);font-weight:700;font-size:19px;letter-spacing:.02em;margin:0}
   .brand .sub{color:var(--muted);font-size:11.5px;letter-spacing:.16em;text-transform:uppercase;margin-top:2px}
   .topnote{color:var(--dim);font-family:var(--mono);font-size:11px;text-align:right;line-height:1.5}
+  .clearbtn{background:none;border:1px solid var(--line);color:var(--muted);border-radius:7px;padding:8px 14px;font-family:var(--ui);font-size:12px;font-weight:600;letter-spacing:.04em;cursor:pointer;transition:.15s;white-space:nowrap}
+  .clearbtn:hover{border-color:var(--red);color:var(--red)}
+  .pagefoot{margin-top:26px;padding-top:14px;border-top:1px solid var(--line);color:var(--dim);font-size:11px;font-family:var(--mono);line-height:1.6}
 
-  .grid{display:grid;grid-template-columns:1fr 332px;gap:22px;align-items:start}
-  @media(max-width:880px){.grid{grid-template-columns:1fr}}
+  .grid{display:grid;grid-template-columns:minmax(0,1fr) 332px;gap:22px;align-items:start}
+  .grid>*{min-width:0}
+  @media(max-width:880px){.grid{grid-template-columns:minmax(0,1fr)}}
+  .tscroll{overflow-x:auto;-webkit-overflow-scrolling:touch;max-width:100%}
   @media(max-width:600px){
     .wrap{padding:16px 12px 64px}
     header.top{gap:10px;padding-bottom:12px}
     .topnote{display:none}
     .brand h1{font-size:16px}
-    .panel{padding:14px 12px;overflow-x:auto;-webkit-overflow-scrolling:touch}
+    .panel{padding:14px 12px}
     .panel h2{font-size:9.5px}
     .side{position:static;top:auto}
-    table.t{min-width:470px}                 /* scroll wide tables instead of crushing inputs */
+    .tscroll table.t{min-width:480px}        /* tables scroll inside their box; page stays put */
     input,select{font-size:16px}             /* stops iOS auto-zoom on focus */
     .lockbar{flex-wrap:wrap;gap:8px}
     .lockmsg{text-align:left;flex:1 1 100%}
@@ -177,7 +182,10 @@
         <h1>FILM COST CALCULATOR</h1>
       </div>
     </div>
-    <div class="topnote">v2.0 · footage = run-time × fps × ratio ÷ frames-per-foot<br>order gate enforced before client export</div>
+    <div style="display:flex;align-items:center;gap:14px">
+      <div class="topnote">footage = run-time × fps × ratio ÷ frames-per-foot<br>autosaves to this browser</div>
+      <button class="clearbtn" onclick="clearAll()">Clear</button>
+    </div>
   </header>
 
   <div class="grid">
@@ -212,7 +220,7 @@
       <div class="panel">
         <h2><span class="step">02</span>Film Needs</h2>
         <p class="desc">One line per shooting framerate. Run-time = how long the camera actually rolls; ratio multiplies it. Add high-speed lines as needed.</p>
-        <table class="t" id="needsTbl">
+        <div class="tscroll"><table class="t" id="needsTbl">
           <thead><tr>
             <th style="width:34%">Scene / Pass</th>
             <th class="r" style="width:18%">Run-time (min)</th>
@@ -222,7 +230,7 @@
             <th style="width:6%"></th>
           </tr></thead>
           <tbody id="needsBody"></tbody>
-        </table>
+        </table></div>
         <button class="addbtn" onclick="addNeed()">+ Add high-speed line</button>
         <div class="needbar">
           <span class="k">Total film required</span>
@@ -233,15 +241,8 @@
       <!-- ORDER -->
       <div class="panel">
         <h2><span class="step">03</span>Stock Order</h2>
-        <p class="desc">Pick stock &amp; roll length — every $/Roll is editable, so confirm against your vendor quote and update the stamp below when you do. The order must cover the footage above before the dev/scan locks turn green.</p>
-        <div class="lockbar" style="margin-top:0;margin-bottom:12px">
-          <label class="lockchk" style="text-transform:none;letter-spacing:.02em">Prices verified
-            <input type="text" id="priceSrc" value="Kodak US list" style="width:120px;padding:5px 8px;font-size:11px" oninput="0">
-            <input type="date" id="priceDate" style="width:140px;padding:5px 8px;font-size:11px">
-          </label>
-          <span class="lockmsg" style="color:var(--dim)">Verita 200D = POA · enter your Kodak quote</span>
-        </div>
-        <table class="t" id="orderTbl">
+        <p class="desc">Pick stock &amp; roll length — every $/Roll is editable, so confirm against your vendor quote. Verita 200D is priced on application (enter your Kodak quote). The order must cover the footage above before the dev/scan locks turn green.</p>
+        <div class="tscroll"><table class="t" id="orderTbl">
           <thead><tr>
             <th style="width:46%">Stock / Roll</th>
             <th class="r" style="width:13%">Qty</th>
@@ -251,7 +252,7 @@
             <th style="width:6%"></th>
           </tr></thead>
           <tbody id="orderBody"></tbody>
-        </table>
+        </table></div>
         <button class="addbtn" onclick="addOrder()">+ Add stock line</button>
         <button class="addbtn" onclick="addShortEnd()">+ Add short end</button>
         <div class="gate" id="gate"><div class="dot"></div><div class="msg"></div></div>
@@ -261,7 +262,7 @@
       <div class="panel">
         <h2><span class="step">04</span>Development / Process</h2>
         <p class="desc">Processing splits automatically by what each stock needs — color negative (ECN-2), color reversal (E-6), and B&amp;W each get their own line, locked to the footage of the stocks that use it. Rates and push/pull are editable per process.</p>
-        <table class="t" id="devTbl">
+        <div class="tscroll"><table class="t" id="devTbl">
           <thead><tr>
             <th style="width:30%">Process</th>
             <th class="r" style="width:16%">Feet</th>
@@ -271,7 +272,7 @@
             <th class="r" style="width:13%">Total</th>
           </tr></thead>
           <tbody id="devBody"></tbody>
-        </table>
+        </table></div>
         <div class="lockbar">
           <label class="lockchk"><input type="checkbox" id="devUnlock" onchange="toggleDevLock()">Unlock</label>
           <span class="lockmsg" id="procGate"></span>
@@ -282,10 +283,10 @@
       <div class="panel">
         <h2><span class="step">05</span>Scan</h2>
         <p class="desc">Telecine / scanning per foot at chosen resolution. Footage is locked to your stock order — change the order to adjust it. Each pass scans the full order.</p>
-        <table class="t" id="scanTbl">
+        <div class="tscroll"><table class="t" id="scanTbl">
           <thead><tr><th style="width:44%">Resolution</th><th class="r" style="width:18%">Feet</th><th class="r" style="width:16%">Rate/ft</th><th class="r" style="width:16%">Total</th><th style="width:6%"></th></tr></thead>
           <tbody id="scanBody"></tbody>
-        </table>
+        </table></div>
         <button class="addbtn" onclick="addScan()">+ Add scan pass</button>
         <div class="lockbar">
           <label class="lockchk"><input type="checkbox" id="scanUnlock" onchange="toggleScanLock()">Unlock</label>
@@ -297,15 +298,15 @@
       <div class="panel">
         <h2><span class="step">06</span>Print &amp; Misc</h2>
         <p class="desc">Optional film-out / print footage and any additional lab fees (rush, drives, film-out per minute, etc.).</p>
-        <table class="t" id="printTbl">
+        <div class="tscroll"><table class="t" id="printTbl">
           <thead><tr><th style="width:48%">Print / Film-out</th><th class="r" style="width:18%">Feet</th><th class="r" style="width:16%">Rate/ft</th><th class="r" style="width:12%">Total</th><th style="width:6%"></th></tr></thead>
           <tbody id="printBody"></tbody>
-        </table>
+        </table></div>
         <button class="addbtn" onclick="addPrint()">+ Add print line</button>
-        <table class="t" id="feeTbl" style="margin-top:18px">
+        <div class="tscroll"><table class="t" id="feeTbl" style="margin-top:18px">
           <thead><tr><th style="width:48%">Additional fee</th><th class="r" style="width:18%">Qty</th><th class="r" style="width:16%">Rate</th><th class="r" style="width:12%">Total</th><th style="width:6%"></th></tr></thead>
           <tbody id="feeBody"></tbody>
-        </table>
+        </table></div>
         <button class="addbtn" onclick="addFee()">+ Add fee</button>
       </div>
     </div>
@@ -331,6 +332,7 @@
       </div>
     </div>
   </div>
+  <footer class="pagefoot">Stock pricing based on the Kodak Motion Picture Products US Price Catalog (effective April 10, 2026). All prices are editable — verify against your vendor at time of order.</footer>
 </div>
 
 <!-- ORDER & COST BREAKDOWN -->
@@ -351,7 +353,7 @@
         <tbody id="bBody"></tbody>
       </table>
       <div class="grand"><span class="gl">GRAND TOTAL</span><span class="gv" id="bGrand"></span></div>
-      <div class="ofoot">Estimate based on pricing as entered (Kodak US list unless edited). Film stock, lab, and scan costs are subject to change at time of order.</div>
+      <div class="ofoot">Stock pricing based on the Kodak Motion Picture Products US Price Catalog (effective April 10, 2026) unless edited. Film, lab, and scan costs are subject to change at time of order.</div>
     </div>
     <div class="obar">
       <button onclick="closeBreakdown()">Close</button>
@@ -600,6 +602,49 @@ function setGate(el, unlocked, have, need, gerund){
 }
 function toggleScanLock(){ state.scanUnlocked=$('scanUnlock').checked; render(); }
 
+/* ---------- persistence (autosave to this browser) ---------- */
+const LS_KEY='filmcost.v1';
+function saveState(){
+  try{ localStorage.setItem(LS_KEY, JSON.stringify({
+    state, f:{ pName:$('pName').value, projFps:$('projFps').value, fmt:$('fmt').value, pDate:$('pDate').value }
+  })); }catch(e){}
+}
+function loadState(){
+  try{
+    const raw=localStorage.getItem(LS_KEY); if(!raw) return false;
+    const d=JSON.parse(raw); if(!d||!d.state) return false;
+    Object.keys(d.state).forEach(k=>{ state[k]=d.state[k]; });
+    ['ecn2','e6','bw'].forEach(p=>{ if(!state.dev||!state.dev[p]){ state.dev=state.dev||{}; state.dev[p]={rate:PROCDEF[p].rate,pp:PROCDEF[p].pp,stops:0,feet:null}; } });
+    if(d.f){ if(d.f.pName!=null)$('pName').value=d.f.pName; if(d.f.projFps!=null)$('projFps').value=d.f.projFps; if(d.f.fmt!=null)$('fmt').value=d.f.fmt; if(d.f.pDate!=null)$('pDate').value=d.f.pDate; }
+    return true;
+  }catch(e){ return false; }
+}
+function clearAll(){
+  if(!confirm('Clear all inputs and start over? This can’t be undone.')) return;
+  try{ localStorage.removeItem(LS_KEY); }catch(e){}
+  state.needs=[{label:'Main coverage', min:0, fps:24, ratio:0}];
+  state.order=[]; state.shortEnds=[];
+  state.scan=[{res:'2K', feet:0, rate:0.29}];
+  state.print=[]; state.fees=[];
+  state.dev={ecn2:{rate:0.20,pp:0.10,stops:0,feet:null},e6:{rate:0.50,pp:0.20,stops:0,feet:null},bw:{rate:0.25,pp:0.10,stops:0,feet:null}};
+  state.devUnlocked=false; state.scanUnlocked=false;
+  $('pName').value='Untitled Spot'; $('projFps').value='24'; $('fmt').value='S16'; $('pDate').valueAsDate=new Date();
+  if($('devUnlock'))$('devUnlock').checked=false; if($('scanUnlock'))$('scanUnlock').checked=false;
+  addOrder(); state.order[0].qty=0;
+  render();
+}
+/* force every dropdown to match the data after a re-render (prevents stale-select bug) */
+function syncSelects(){
+  const ob=$('orderBody');
+  if(ob){
+    const rows=ob.querySelectorAll(':scope > tr');
+    state.order.forEach((o,i)=>{ const s=rows[i]&&rows[i].querySelector('select'); if(s&&s.value!==o.key) s.value=o.key; });
+    state.shortEnds.forEach((o,i)=>{ const r=rows[state.order.length+i]; const s=r&&r.querySelector('select'); const v=o.proc||'ecn2'; if(s&&s.value!==v) s.value=v; });
+  }
+  const sb=$('scanBody');
+  if(sb){ const rows=sb.querySelectorAll(':scope > tr'); state.scan.forEach((x,i)=>{ const s=rows[i]&&rows[i].querySelector('select'); const idx=SCANS.findIndex(z=>z.n===x.res); if(s&&idx>=0&&s.value!==String(idx)) s.value=String(idx); }); }
+}
+
 /* ---------- gate + summary ---------- */
 /* keep focus + caret across re-renders so multi-digit entry works */
 function render(){
@@ -608,10 +653,12 @@ function render(){
   let ss=null,se=null;
   if(k){ try{ ss=a.selectionStart; se=a.selectionEnd; }catch(e){} }
   _render();
+  syncSelects();
   if(k){
     const el=document.querySelector('[data-k="'+k+'"]');
     if(el){ el.focus(); if(ss!=null){ try{ el.setSelectionRange(ss,se); }catch(e){} } }
   }
+  saveState();
 }
 function _render(){
   $('fmtHint').textContent=`${FMT[$('fmt').value].label} — ${fpf()} frames per foot. ${ft(fpf()*1)} ≈ 1 ft holds ${fpf()} frames; at ${$('projFps').value||24} fps that's ${(fpf()/(Number($('projFps').value)||24)).toFixed(1)} ft/sec on screen.`;
@@ -724,10 +771,14 @@ function printBreakdown(){
 
 /* ---------- init ---------- */
 (function init(){
-  $('pDate').valueAsDate=new Date();
-  $('priceDate').value='2026-04-10';
   const dl=document.createElement('datalist');dl.id='feelist';dl.innerHTML=FEES.map(f=>`<option value="${f.n}">`).join('');document.body.appendChild(dl);
-  addOrder(); state.order[0].qty=0; // one stock line, zero by default
+  const loaded=loadState();
+  if(!loaded){
+    $('pDate').valueAsDate=new Date();
+    addOrder(); state.order[0].qty=0; // one stock line, zero by default
+  } else if(!state.order.length){
+    addOrder(); state.order[0].qty=0;
+  }
   render();
 })();
 </script>
