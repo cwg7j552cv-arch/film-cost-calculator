@@ -1,0 +1,735 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Film Cost Calculator</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700&family=Archivo+Black&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#000000; --panel:#0e0e0e; --panel2:#161616; --line:#2a2a2a;
+    --ink:#f2f2f0; --muted:#9a9a95; --dim:#7a7a72;
+    --amber:#f2f2f0; --orange:#f2f2f0; --green:#f2f2f0; --red:#e5675b;
+    --paper:#ffffff; --paperink:#000000; --papermut:#555555; --paperline:#cccccc;
+    --mono:'DM Mono',ui-monospace,monospace;
+    --ui:'Archivo',system-ui,sans-serif;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0}
+  body{
+    background:var(--bg);color:var(--ink);font-family:var(--ui);
+    font-size:14px;line-height:1.45;
+    -webkit-font-smoothing:antialiased;
+  }
+  .wrap{max-width:1120px;margin:0 auto;padding:28px 22px 90px}
+  /* masthead */
+  header.top{display:flex;align-items:flex-end;justify-content:space-between;gap:20px;border-bottom:1px solid var(--ink);padding-bottom:14px;margin-bottom:26px;flex-wrap:wrap}
+  .brand{display:flex;align-items:center;gap:12px}
+  .mark{width:34px;height:34px;background:none;display:flex;align-items:center;justify-content:center;flex:0 0 auto;color:var(--ink)}
+  .mark span{font-family:'Archivo Black';color:var(--ink);font-size:21px;line-height:1}
+  .brand h1{font-family:var(--ui);font-weight:700;font-size:19px;letter-spacing:.02em;margin:0}
+  .brand .sub{color:var(--muted);font-size:11.5px;letter-spacing:.16em;text-transform:uppercase;margin-top:2px}
+  .topnote{color:var(--dim);font-family:var(--mono);font-size:11px;text-align:right;line-height:1.5}
+
+  .grid{display:grid;grid-template-columns:1fr 332px;gap:22px;align-items:start}
+  @media(max-width:880px){.grid{grid-template-columns:1fr}}
+  @media(max-width:600px){
+    .wrap{padding:16px 12px 64px}
+    header.top{gap:10px;padding-bottom:12px}
+    .topnote{display:none}
+    .brand h1{font-size:16px}
+    .panel{padding:14px 12px;overflow-x:auto;-webkit-overflow-scrolling:touch}
+    .panel h2{font-size:9.5px}
+    .side{position:static;top:auto}
+    table.t{min-width:470px}                 /* scroll wide tables instead of crushing inputs */
+    input,select{font-size:16px}             /* stops iOS auto-zoom on focus */
+    .lockbar{flex-wrap:wrap;gap:8px}
+    .lockmsg{text-align:left;flex:1 1 100%}
+    .overlay{padding:14px 8px}
+    .sheet .inner{padding:24px 18px}
+  }
+
+  .panel{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:18px 18px 16px;margin-bottom:16px}
+  .panel h2{font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:var(--ink);margin:0 0 2px;font-weight:600}
+  .panel .desc{color:var(--muted);font-size:11.5px;margin:0 0 14px}
+  .panel h2 .step{color:var(--dim);font-weight:600;margin-right:7px}
+
+  label{display:block;font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin-bottom:5px}
+  input,select{
+    width:100%;background:var(--panel2);border:1px solid var(--line);color:var(--ink);
+    border-radius:6px;padding:9px 10px;font-family:var(--mono);font-size:13px;outline:none;transition:border-color .15s,box-shadow .15s
+  }
+  input:focus,select:focus{border-color:var(--ink);box-shadow:0 0 0 3px rgba(255,255,255,.10)}
+  input.locked{color:var(--ink);background:#161616;border-style:dashed;border-color:#3a3a3a;cursor:not-allowed;opacity:1}
+  input.locked:focus{box-shadow:none;border-color:#3a3a3a}
+  .lockbar{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:12px;padding:7px 11px;border-radius:6px;background:var(--panel2);border:1px solid var(--line)}
+  .lockchk{display:flex;align-items:center;gap:6px;font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);cursor:pointer;margin:0;white-space:nowrap;user-select:none}
+  .lockchk input{width:auto;cursor:pointer;accent-color:var(--ink);margin:0}
+  .lockmsg{font-size:11px;color:var(--muted);text-align:right;line-height:1.35}
+  .lockmsg b{font-family:var(--mono);font-weight:500;color:var(--ink)}
+  .lockmsg.ok b{color:var(--ink)}
+  .lockmsg.bad{color:var(--red)} .lockmsg.bad b{color:var(--red)}
+  .lockmsg.unlocked{color:var(--muted)} .lockmsg.unlocked b{color:var(--ink)}
+  select{cursor:pointer;font-family:var(--ui);font-size:13px}
+  .row{display:flex;gap:10px;flex-wrap:wrap}
+  .f{flex:1;min-width:120px}
+  .num{text-align:right}
+
+  table.t{width:100%;border-collapse:collapse;margin-top:4px}
+  table.t th{font-size:9.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);text-align:left;padding:6px 8px;font-weight:600;border-bottom:1px solid var(--line)}
+  table.t th.r,table.t td.r{text-align:right}
+  table.t td{padding:6px 6px;border-bottom:1px solid var(--line);vertical-align:middle}
+  table.t input,table.t select{padding:7px 8px;border-radius:6px}
+  td .ft{font-family:var(--mono);color:var(--ink);font-size:12.5px;white-space:nowrap}
+  td .pct{display:block;font-size:10px;color:var(--dim);font-family:var(--mono);margin-top:1px;white-space:nowrap}
+  td .money{font-family:var(--mono);font-size:12.5px;white-space:nowrap}
+  .iconbtn{background:none;border:1px solid var(--line);color:var(--muted);width:26px;height:26px;border-radius:6px;cursor:pointer;font-size:14px;line-height:1;padding:0;transition:.15s}
+  .iconbtn:hover{border-color:var(--red);color:var(--red)}
+  .addbtn{margin-top:10px;background:none;border:1px dashed #3a3a3a;color:var(--ink);border-radius:6px;padding:8px 12px;cursor:pointer;font-family:var(--ui);font-size:12px;font-weight:600;letter-spacing:.04em;transition:.15s}
+  .addbtn:hover{border-color:var(--ink);background:#161616}
+
+  .needbar{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:14px;padding:11px 14px;border-radius:6px;background:var(--panel2);border:1px solid var(--line)}
+  .needbar .k{font-size:10.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
+  .needbar .v{font-family:var(--mono);font-size:18px;color:var(--ink);font-weight:500}
+
+  /* gate */
+  .gate{display:flex;align-items:center;gap:13px;padding:12px 14px;border-radius:6px;margin-top:2px;border:1px solid;transition:.2s}
+  .gate.ok{background:var(--panel2);border-color:var(--line)}
+  .gate.bad{background:#241313;border-color:#5a2c27}
+  .gate .dot{width:30px;height:30px;border-radius:50%;flex:0 0 auto;display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:700}
+  .gate.ok .dot{background:#222220;color:var(--ink)}
+  .gate.bad .dot{background:#3a1f1c;color:var(--red)}
+  .gate .msg{font-size:13px;line-height:1.4}
+  .gate .msg b{font-family:var(--mono);font-weight:500}
+  .gate.ok .msg b{color:var(--ink)} .gate.bad .msg b{color:var(--red)}
+
+  /* sidebar summary */
+  .side{position:sticky;top:18px}
+  .side .panel{background:var(--panel)}
+  .sumrow{display:flex;justify-content:space-between;align-items:baseline;padding:8px 0;border-bottom:1px solid var(--line)}
+  .sumrow .lab{color:var(--muted);font-size:12.5px}
+  .sumrow .val{font-family:var(--mono);font-size:14px}
+  .sumrow.total{border-bottom:none;margin-top:6px;padding-top:12px;border-top:2px solid var(--ink)}
+  .sumrow.total .lab{color:var(--ink);font-weight:600;font-size:12px;letter-spacing:.1em;text-transform:uppercase}
+  .sumrow.total .val{font-size:20px;color:var(--ink)}
+  .ftmini{font-family:var(--mono);font-size:11px;color:var(--dim);margin-left:6px}
+
+  .genbtn{width:100%;margin-top:16px;padding:12px;border-radius:7px;border:none;cursor:pointer;font-family:var(--ui);font-weight:600;font-size:13px;letter-spacing:.06em;text-transform:uppercase;color:var(--bg);background:var(--ink);transition:.15s}
+  .genbtn:disabled{cursor:not-allowed;background:#2a2a2a;color:var(--dim)}
+  .genbtn:not(:disabled):hover{background:#fff}
+  .gatehint{font-size:11px;color:var(--red);text-align:center;margin-top:8px;min-height:14px}
+
+  .pushwrap{display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap}
+  .chk{display:flex;align-items:center;gap:7px;font-size:12px;color:var(--muted);cursor:pointer;user-select:none;padding-top:18px}
+  .chk input{width:auto}
+  .hint{font-size:10.5px;color:var(--dim);margin-top:5px;font-family:var(--mono)}
+
+  /* ---------- CLIENT BREAKDOWN OVERLAY ---------- */
+  .overlay{position:fixed;inset:0;background:rgba(8,6,5,.72);backdrop-filter:blur(3px);display:none;align-items:flex-start;justify-content:center;padding:34px 16px;overflow:auto;z-index:50}
+  .overlay.show{display:flex}
+  .sheet{background:var(--paper);color:var(--paperink);width:720px;max-width:100%;border-radius:4px;box-shadow:0 24px 70px rgba(0,0,0,.45);font-family:var(--ui)}
+  .sheet .inner{padding:40px 44px}
+  .ohead{display:flex;justify-content:space-between;align-items:flex-end;border-bottom:1px solid var(--paperink);padding-bottom:12px}
+  .ohead .co{font-family:var(--ui);font-weight:700;font-size:19px;letter-spacing:.01em;color:var(--paperink)}
+  .ohead .est{text-align:right;font-family:var(--mono);font-size:11px;color:var(--papermut);line-height:1.6}
+  .ohead .est b{color:var(--paperink);font-weight:500}
+  .meta{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin:20px 0 6px}
+  .meta .m .l{font-size:9px;letter-spacing:.14em;text-transform:uppercase;color:var(--papermut);margin-bottom:3px}
+  .meta .m .v{font-size:13px;font-weight:500}
+  .specline{font-family:var(--mono);font-size:11px;color:var(--papermut);margin:14px 0 18px}
+  .specline b{color:var(--paperink);font-weight:500}
+  table.cl{width:100%;border-collapse:collapse}
+  table.cl thead th{font-size:9px;letter-spacing:.13em;text-transform:uppercase;color:var(--papermut);text-align:left;padding:0 0 7px;border-bottom:1px solid var(--paperink);font-weight:600}
+  table.cl thead th.r{text-align:right}
+  table.cl .sec td{padding:15px 0 3px;font-family:var(--ui);font-weight:600;font-size:9.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--papermut)}
+  table.cl .li td{padding:5px 0;font-size:12.5px;border-bottom:1px solid var(--paperline)}
+  table.cl .li td.r{text-align:right;font-family:var(--mono);font-size:12px}
+  table.cl .li td .det{display:block;font-size:10.5px;color:var(--papermut);font-family:var(--mono);margin-top:1px}
+  table.cl .subt td{padding:6px 0;font-size:11.5px;text-align:right;color:var(--papermut);font-family:var(--mono);border-bottom:none}
+  table.cl .subt td.lab{text-align:left;font-family:var(--ui);letter-spacing:.04em}
+  .grand{display:flex;justify-content:space-between;align-items:baseline;margin-top:16px;padding-top:12px;border-top:2px solid var(--paperink)}
+  .grand .gl{font-family:var(--ui);font-weight:600;font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--paperink)}
+  .grand .gv{font-family:var(--mono);font-size:19px;font-weight:500;color:var(--paperink)}
+  .ofoot{margin-top:20px;font-size:9.5px;color:var(--papermut);line-height:1.6}
+  .obar{display:flex;gap:10px;justify-content:flex-end;padding:14px 22px;border-top:1px solid var(--paperline);background:#f2f2f2;border-radius:0 0 4px 4px}
+  .obar button{font-family:var(--ui);font-weight:600;font-size:13px;border-radius:7px;padding:9px 18px;cursor:pointer;border:1px solid #bbb;background:#fff;color:#000}
+  .obar button.print{background:#000;border-color:#000;color:#fff}
+  .editmark{font-size:10px;color:var(--papermut);font-style:italic;margin-top:4px}
+
+  @media print{
+    body{background:#fff}
+    @page{margin:14mm}
+    body:has(.overlay.show)>.wrap{display:none}
+    .overlay.show{position:static;display:block;background:#fff;padding:0;backdrop-filter:none}
+    .overlay.show .sheet{box-shadow:none;width:100%;max-width:100%;border-radius:0}
+    .obar{display:none}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <div class="brand">
+      <div class="mark"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" aria-hidden="true"><rect x="3" y="4.5" width="18" height="15" rx="2.4" stroke="currentColor" stroke-width="2"/><line x1="8.5" y1="4.5" x2="8.5" y2="19.5" stroke="currentColor" stroke-width="2"/><line x1="15.5" y1="4.5" x2="15.5" y2="19.5" stroke="currentColor" stroke-width="2"/></svg></div>
+      <div>
+        <h1>FILM COST CALCULATOR</h1>
+      </div>
+    </div>
+    <div class="topnote">v2.0 · footage = run-time × fps × ratio ÷ frames-per-foot<br>order gate enforced before client export</div>
+  </header>
+
+  <div class="grid">
+    <!-- LEFT: CALCULATOR -->
+    <div>
+      <!-- PROJECT -->
+      <div class="panel">
+        <h2><span class="step">01</span>Project</h2>
+        <p class="desc">Identifies the breakdown and sets the film format (frames-per-foot) used for every footage calc.</p>
+        <div class="row">
+          <div class="f"><label>Project / Title</label><input id="pName" value="Untitled Spot"></div>
+        </div>
+        <div class="row" style="margin-top:12px">
+          <div class="f"><label>Date</label><input id="pDate" type="date"></div>
+          <div class="f" style="max-width:140px"><label>Project FPS</label><input id="projFps" class="num" type="text" inputmode="decimal" value="24" min="1" oninput="render()"></div>
+        </div>
+        <div class="row" style="margin-top:12px">
+          <div class="f">
+            <label>Format / Gauge</label>
+            <select id="fmt" onchange="render()">
+              <option value="S16">Super 16mm · 40 fr/ft</option>
+              <option value="35-2p">35mm 2-perf · 32 fr/ft</option>
+              <option value="35-3p">35mm 3-perf · 21.33 fr/ft</option>
+              <option value="35-4p">35mm 4-perf · 16 fr/ft</option>
+            </select>
+          </div>
+        </div>
+        <div class="hint" id="fmtHint"></div>
+      </div>
+
+      <!-- FILM NEEDS -->
+      <div class="panel">
+        <h2><span class="step">02</span>Film Needs</h2>
+        <p class="desc">One line per shooting framerate. Run-time = how long the camera actually rolls; ratio multiplies it. Add high-speed lines as needed.</p>
+        <table class="t" id="needsTbl">
+          <thead><tr>
+            <th style="width:34%">Scene / Pass</th>
+            <th class="r" style="width:18%">Run-time (min)</th>
+            <th class="r" style="width:14%">FPS</th>
+            <th class="r" style="width:12%">Ratio</th>
+            <th class="r" style="width:16%">Footage</th>
+            <th style="width:6%"></th>
+          </tr></thead>
+          <tbody id="needsBody"></tbody>
+        </table>
+        <button class="addbtn" onclick="addNeed()">+ Add high-speed line</button>
+        <div class="needbar">
+          <span class="k">Total film required</span>
+          <span class="v" id="needFeet">0 ft</span>
+        </div>
+      </div>
+
+      <!-- ORDER -->
+      <div class="panel">
+        <h2><span class="step">03</span>Stock Order</h2>
+        <p class="desc">Pick stock &amp; roll length — every $/Roll is editable, so confirm against your vendor quote and update the stamp below when you do. The order must cover the footage above before the dev/scan locks turn green.</p>
+        <div class="lockbar" style="margin-top:0;margin-bottom:12px">
+          <label class="lockchk" style="text-transform:none;letter-spacing:.02em">Prices verified
+            <input type="text" id="priceSrc" value="Kodak US list" style="width:120px;padding:5px 8px;font-size:11px" oninput="0">
+            <input type="date" id="priceDate" style="width:140px;padding:5px 8px;font-size:11px">
+          </label>
+          <span class="lockmsg" style="color:var(--dim)">Verita 200D = POA · enter your Kodak quote</span>
+        </div>
+        <table class="t" id="orderTbl">
+          <thead><tr>
+            <th style="width:46%">Stock / Roll</th>
+            <th class="r" style="width:13%">Qty</th>
+            <th class="r" style="width:15%">$ / Roll</th>
+            <th class="r" style="width:13%">Feet</th>
+            <th class="r" style="width:13%">Cost</th>
+            <th style="width:6%"></th>
+          </tr></thead>
+          <tbody id="orderBody"></tbody>
+        </table>
+        <button class="addbtn" onclick="addOrder()">+ Add stock line</button>
+        <button class="addbtn" onclick="addShortEnd()">+ Add short end</button>
+        <div class="gate" id="gate"><div class="dot"></div><div class="msg"></div></div>
+      </div>
+
+      <!-- PROCESS -->
+      <div class="panel">
+        <h2><span class="step">04</span>Development / Process</h2>
+        <p class="desc">Processing splits automatically by what each stock needs — color negative (ECN-2), color reversal (E-6), and B&amp;W each get their own line, locked to the footage of the stocks that use it. Rates and push/pull are editable per process.</p>
+        <table class="t" id="devTbl">
+          <thead><tr>
+            <th style="width:30%">Process</th>
+            <th class="r" style="width:16%">Feet</th>
+            <th class="r" style="width:15%">Rate/ft</th>
+            <th class="r" style="width:13%">Push/Pull</th>
+            <th class="r" style="width:13%">P/P $/ft</th>
+            <th class="r" style="width:13%">Total</th>
+          </tr></thead>
+          <tbody id="devBody"></tbody>
+        </table>
+        <div class="lockbar">
+          <label class="lockchk"><input type="checkbox" id="devUnlock" onchange="toggleDevLock()">Unlock</label>
+          <span class="lockmsg" id="procGate"></span>
+        </div>
+      </div>
+
+      <!-- SCAN -->
+      <div class="panel">
+        <h2><span class="step">05</span>Scan</h2>
+        <p class="desc">Telecine / scanning per foot at chosen resolution. Footage is locked to your stock order — change the order to adjust it. Each pass scans the full order.</p>
+        <table class="t" id="scanTbl">
+          <thead><tr><th style="width:44%">Resolution</th><th class="r" style="width:18%">Feet</th><th class="r" style="width:16%">Rate/ft</th><th class="r" style="width:16%">Total</th><th style="width:6%"></th></tr></thead>
+          <tbody id="scanBody"></tbody>
+        </table>
+        <button class="addbtn" onclick="addScan()">+ Add scan pass</button>
+        <div class="lockbar">
+          <label class="lockchk"><input type="checkbox" id="scanUnlock" onchange="toggleScanLock()">Unlock</label>
+          <span class="lockmsg" id="scanGate"></span>
+        </div>
+      </div>
+
+      <!-- PRINT + FEES -->
+      <div class="panel">
+        <h2><span class="step">06</span>Print &amp; Misc</h2>
+        <p class="desc">Optional film-out / print footage and any additional lab fees (rush, drives, film-out per minute, etc.).</p>
+        <table class="t" id="printTbl">
+          <thead><tr><th style="width:48%">Print / Film-out</th><th class="r" style="width:18%">Feet</th><th class="r" style="width:16%">Rate/ft</th><th class="r" style="width:12%">Total</th><th style="width:6%"></th></tr></thead>
+          <tbody id="printBody"></tbody>
+        </table>
+        <button class="addbtn" onclick="addPrint()">+ Add print line</button>
+        <table class="t" id="feeTbl" style="margin-top:18px">
+          <thead><tr><th style="width:48%">Additional fee</th><th class="r" style="width:18%">Qty</th><th class="r" style="width:16%">Rate</th><th class="r" style="width:12%">Total</th><th style="width:6%"></th></tr></thead>
+          <tbody id="feeBody"></tbody>
+        </table>
+        <button class="addbtn" onclick="addFee()">+ Add fee</button>
+      </div>
+    </div>
+
+    <!-- RIGHT: SUMMARY -->
+    <div class="side">
+      <div class="panel">
+        <h2>Estimate</h2>
+        <p class="desc" id="sideSpec"></p>
+        <div class="sumrow"><span class="lab">Raw Stock</span><span class="val" id="sRaw">$0</span></div>
+        <div class="sumrow"><span class="lab">Process</span><span class="val" id="sProc">$0</span></div>
+        <div class="sumrow"><span class="lab">Scan</span><span class="val" id="sScan">$0</span></div>
+        <div class="sumrow"><span class="lab">Print / Film-out</span><span class="val" id="sPrint">$0</span></div>
+        <div class="sumrow"><span class="lab">Additional Fees</span><span class="val" id="sFees">$0</span></div>
+        <div class="sumrow total"><span class="lab">Grand Total</span><span class="val" id="sGrand">$0</span></div>
+        <button class="genbtn" onclick="openBreakdown()">Generate Breakdown</button>
+      </div>
+      <div class="panel" style="background:var(--panel)">
+        <h2>Footage Check</h2>
+        <div class="sumrow"><span class="lab">Required</span><span class="val" id="cReq">0 ft</span></div>
+        <div class="sumrow"><span class="lab">Ordered</span><span class="val" id="cOrd">0 ft</span></div>
+        <div class="sumrow"><span class="lab">Margin</span><span class="val" id="cMar">0 ft</span></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ORDER & COST BREAKDOWN -->
+<div class="overlay" id="overlay">
+  <div class="sheet">
+    <div class="inner">
+      <div class="ohead">
+        <div class="co">Film Cost Breakdown</div>
+        <div class="est"><b id="bProj"></b><br><span id="bDate"></span></div>
+      </div>
+      <div class="meta">
+        <div class="m"><div class="l">Format</div><div class="v" id="bFmt"></div></div>
+        <div class="m"><div class="l">Project FPS</div><div class="v" id="bFps"></div></div>
+        <div class="m"><div class="l">Film Required</div><div class="v" id="bReq"></div></div>
+      </div>
+      <div class="specline" id="bSpec"></div>
+      <table class="cl"><thead><tr><th>Item</th><th class="r">Detail</th><th class="r">Amount</th></tr></thead>
+        <tbody id="bBody"></tbody>
+      </table>
+      <div class="grand"><span class="gl">GRAND TOTAL</span><span class="gv" id="bGrand"></span></div>
+      <div class="ofoot">Estimate based on pricing as entered (Kodak US list unless edited). Film stock, lab, and scan costs are subject to change at time of order.</div>
+    </div>
+    <div class="obar">
+      <button onclick="closeBreakdown()">Close</button>
+      <button class="print" onclick="printBreakdown()">Print / Save as PDF</button>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ---------- reference data (from current calculator) ---------- */
+const FMT = {
+  'S16'  :{label:'Super 16mm',      fpf:40,     gauge:'16mm'},
+  '35-2p':{label:'35mm 2-perf',     fpf:32,     gauge:'35mm'},
+  '35-3p':{label:'35mm 3-perf',     fpf:21.3333,gauge:'35mm'},
+  '35-4p':{label:'35mm 4-perf',     fpf:16,     gauge:'35mm'},
+};
+// stock catalog: lengths [ft] -> price ($). 35mm shared across perf counts.
+// Prices: KODAK Motion Picture Products US Price Catalog, effective 2026-04-10 (Kodak-direct list).
+// B&H no longer stocks these by the roll; Kodak's catalog is the authoritative current source.
+// POA = Price On Application (Kodak quotes Verita 200D per order) — enter your quote in the $/Roll field.
+const STOCK = {
+  '16mm':[
+    {n:'Vision3 500T 7219',        proc:'ecn2', rolls:[[400,248],[100,62]]},
+    {n:'Vision3 250D 7207',        proc:'ecn2', rolls:[[400,248],[100,62]]},
+    {n:'Vision3 200T 7213',        proc:'ecn2', rolls:[[400,248],[100,62]]},
+    {n:'Vision3 50D 7203',         proc:'ecn2', rolls:[[400,248],[100,62]]},
+    {n:'Verita 200D 7206 (POA)',   proc:'ecn2', rolls:[[400,0],[100,0]]},
+    {n:'Ektachrome 100D 7294',     proc:'e6',   rolls:[[400,304],[100,76]]},
+    {n:'Double-X 7222',            proc:'bw',   rolls:[[400,248],[100,62]]},
+    {n:'Tri-X 7266',               proc:'bw',   rolls:[[400,248],[100,62]]},
+  ],
+  '35mm':[
+    {n:'Vision3 500T 5219',        proc:'ecn2', rolls:[[1000,890],[400,356],[200,178]]},
+    {n:'Vision3 250D 5207',        proc:'ecn2', rolls:[[1000,890],[400,356],[200,178]]},
+    {n:'Vision3 200T 5213',        proc:'ecn2', rolls:[[1000,890],[400,356]]},
+    {n:'Vision3 50D 5203',         proc:'ecn2', rolls:[[1000,890],[400,356]]},
+    {n:'Verita 200D 5206 (POA)',   proc:'ecn2', rolls:[[1000,0],[400,0]]},
+    {n:'Ektachrome 100D 5294',     proc:'e6',   rolls:[[1000,1300],[400,520]]},
+    {n:'Double-X 5222',            proc:'bw',   rolls:[[1000,890],[400,356]]},
+  ],
+};
+// Each stock maps to the lab process it requires; development auto-splits by these.
+const PROCDEF = {
+  ecn2:{name:'ECN-2 · Color Negative', rate:0.20, pp:0.10},
+  e6:  {name:'E-6 · Color Reversal',   rate:0.50, pp:0.20},
+  bw:  {name:'B&W',                    rate:0.25, pp:0.10},
+};
+const SCANS = [
+  {n:'2K',           rate:0.29},
+  {n:'4K UHD',       rate:0.50},
+  {n:'4K Overscan',  rate:0.70},
+  {n:'6.5K',         rate:0.82},
+  {n:'1080p',        rate:0.10},
+  {n:'3.3K Overscan',rate:0.40},
+];
+const FEES = [
+  {n:'Rush Fee',          rate:150},
+  {n:'Film Out / min',    rate:125},
+  {n:'2TB Drive',         rate:85},
+  {n:'Bleach Bypass Setup',rate:500},
+];
+
+/* ---------- state ---------- */
+const state = {
+  needs:[{label:'Main coverage', min:0, fps:24, ratio:0}],
+  order:[],
+  shortEnds:[],
+  scan:[{res:'2K', feet:0, rate:0.29}],
+  print:[],
+  fees:[],
+  dev:{
+    ecn2:{rate:0.20, pp:0.10, stops:0, feet:null},
+    e6:  {rate:0.50, pp:0.20, stops:0, feet:null},
+    bw:  {rate:0.25, pp:0.10, stops:0, feet:null},
+  },
+  devUnlocked:false,
+  scanUnlocked:false,
+};
+const $=id=>document.getElementById(id);
+const money=n=>'$'+(Math.round(n*100)/100).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
+const money0=n=>'$'+Math.round(n).toLocaleString('en-US');
+const ft=n=>Math.round(n).toLocaleString('en-US')+' ft';
+
+function fpf(){return FMT[$('fmt').value].fpf;}
+function gauge(){return FMT[$('fmt').value].gauge;}
+
+/* ---------- footage math (matches existing model) ----------
+   footage = run-time(sec) × shootingFPS × ratio ÷ frames-per-foot
+   (project FPS cancels out of footage; shown only as TRT reference)   */
+function lineFeet(l){ return (Number(l.min)||0)*60*(Number(l.fps)||0)*(Number(l.ratio)||0)/fpf(); }
+function neededFeet(){ return state.needs.reduce((s,l)=>s+lineFeet(l),0); }
+function orderedFeet(){
+  let f=state.order.reduce((s,o)=>s+(Number(o.len)||0)*(Number(o.qty)||0),0);
+  f+=state.shortEnds.reduce((s,o)=>s+(Number(o.feet)||0),0);
+  return f;
+}
+function rawCost(){
+  let c=state.order.reduce((s,o)=>s+(Number(o.price)||0)*(Number(o.qty)||0),0);
+  c+=state.shortEnds.reduce((s,o)=>s+(Number(o.cost)||0),0);
+  return c;
+}
+function stockProc(key){const [si]=key.split('_').map(Number);const s=STOCK[gauge()][si];return s?s.proc:'ecn2';}
+// footage that needs each process, summed from the order + short ends
+function devFeetMap(){
+  const m={};
+  state.order.forEach(o=>{const p=stockProc(o.key);m[p]=(m[p]||0)+(Number(o.len)||0)*(Number(o.qty)||0);});
+  state.shortEnds.forEach(o=>{const p=o.proc||'ecn2';m[p]=(m[p]||0)+(Number(o.feet)||0);});
+  return m;
+}
+// one row per process present in the order, locked to that process's footage
+function devGroups(){
+  const fm=devFeetMap();
+  return Object.keys(PROCDEF).filter(p=>(fm[p]||0)>0).map(p=>{
+    const d=state.dev[p], auto=Math.round(fm[p]||0);
+    const feet=(state.devUnlocked && d.feet!==null && d.feet!=='') ? Number(d.feet) : auto;
+    const total=feet*(Number(d.rate)||0) + feet*Math.abs(Number(d.stops)||0)*(Number(d.pp)||0);
+    return {proc:p, name:PROCDEF[p].name, auto, feet, d, total};
+  });
+}
+function procCost(){return devGroups().reduce((s,g)=>s+g.total,0);}
+function scanCost(){return state.scan.reduce((s,x)=>s+(Number(x.feet)||0)*(Number(x.rate)||0),0);}
+function printCost(){return state.print.reduce((s,x)=>s+(Number(x.feet)||0)*(Number(x.rate)||0),0);}
+function feeCost(){return state.fees.reduce((s,x)=>s+(Number(x.qty)||0)*(Number(x.rate)||0),0);}
+function grand(){return rawCost()+procCost()+scanCost()+printCost()+feeCost();}
+
+/* ---------- builders ---------- */
+function stockOptions(sel){
+  const list=STOCK[gauge()]; let html='';
+  list.forEach((s,si)=>s.rolls.forEach((r,ri)=>{
+    const key=si+'_'+ri; const txt=s.n+'  ·  '+r[0]+'ft';
+    html+=`<option value="${key}" ${sel===key?'selected':''}>${txt}</option>`;
+  }));
+  return html;
+}
+function addNeed(){state.needs.push({label:'High-speed pass', min:1, fps:60, ratio:2});render();}
+function addOrder(){
+  const list=STOCK[gauge()]; const r0=list[0].rolls[0];
+  state.order.push({key:'0_0', len:r0[0], price:r0[1], qty:1});render();
+}
+function addShortEnd(){state.shortEnds.push({label:'Short end', feet:100, cost:0, proc:'ecn2'});render();}
+function addScan(){state.scan.push({res:'2K', feet:0, rate:0.29});render();}
+function addPrint(){state.print.push({desc:'Film-out', feet:0, rate:0});render();}
+function addFee(){state.fees.push({name:'Rush Fee', qty:1, rate:150});render();}
+function del(arr,i){arr.splice(i,1);render();}
+
+function renderDev(){
+  const groups=devGroups();
+  if(!groups.length){ $('devBody').innerHTML=`<tr><td colspan="6" style="color:var(--dim);font-size:12px;padding:8px 6px">Add stock to the order to populate development.</td></tr>`; return; }
+  const lk=state.devUnlocked;
+  $('devBody').innerHTML=groups.map(g=>{const p=g.proc;return `
+    <tr>
+      <td>${g.name}</td>
+      <td class="r"><input data-k="d${p}f" class="num${lk?'':' locked'}" type="text" inputmode="decimal" value="${g.feet}" ${lk?'':'readonly tabindex="-1"'} oninput="state.dev['${p}'].feet=this.value;render()" title="${lk?'Manual override':'Locked to ordered '+g.name+' footage'}"></td>
+      <td class="r"><input data-k="d${p}r" class="num" type="text" inputmode="decimal" step="0.01" value="${g.d.rate}" oninput="state.dev['${p}'].rate=this.value;render()"></td>
+      <td class="r"><input data-k="d${p}s" class="num" type="text" inputmode="decimal" step="1" value="${g.d.stops}" oninput="state.dev['${p}'].stops=this.value;render()"></td>
+      <td class="r"><input data-k="d${p}p" class="num" type="text" inputmode="decimal" step="0.01" value="${g.d.pp}" oninput="state.dev['${p}'].pp=this.value;render()"></td>
+      <td class="r"><span class="money">${money0(g.total)}</span></td>
+    </tr>`;}).join('');
+}
+function toggleDevLock(){ state.devUnlocked=$('devUnlock').checked; render(); }
+
+function renderNeeds(){
+  $('needsBody').innerHTML=state.needs.map((l,i)=>`
+    <tr>
+      <td><input data-k="n${i}l" value="${l.label}" oninput="state.needs[${i}].label=this.value"></td>
+      <td class="r"><input data-k="n${i}m" class="num" type="text" inputmode="decimal" step="0.1" value="${l.min}" oninput="state.needs[${i}].min=this.value;render()"></td>
+      <td class="r"><input data-k="n${i}f" class="num" type="text" inputmode="decimal" value="${l.fps}" oninput="state.needs[${i}].fps=this.value;render()"></td>
+      <td class="r"><input data-k="n${i}r" class="num" type="text" inputmode="decimal" step="0.1" value="${l.ratio}" oninput="state.needs[${i}].ratio=this.value;render()"></td>
+      <td class="r"><span class="ft">${ft(lineFeet(l))}</span></td>
+      <td class="r">${state.needs.length>1?`<button class="iconbtn" onclick="del(state.needs,${i})">×</button>`:''}</td>
+    </tr>`).join('');
+  $('needFeet').textContent=ft(neededFeet());
+}
+function renderOrder(){
+  const tot=orderedFeet();
+  const pct=f=>tot>0?`<span class="pct">${(f/tot*100).toFixed(0)}% of order</span>`:'';
+  $('orderBody').innerHTML =
+   state.order.map((o,i)=>{const lf=(Number(o.len)||0)*(Number(o.qty)||0);return `
+    <tr>
+      <td><select onchange="pickStock(${i},this.value)">${stockOptions(o.key)}</select></td>
+      <td class="r"><input data-k="o${i}q" class="num" type="text" inputmode="decimal" min="0" value="${o.qty}" oninput="state.order[${i}].qty=this.value;render()"></td>
+      <td class="r"><input data-k="o${i}p" class="num" type="text" inputmode="decimal" step="0.01" value="${o.price}" oninput="state.order[${i}].price=this.value;render()"></td>
+      <td class="r"><span class="ft">${ft(lf)}</span>${pct(lf)}</td>
+      <td class="r"><span class="money">${money0((Number(o.price)||0)*(Number(o.qty)||0))}</span></td>
+      <td class="r"><button class="iconbtn" onclick="del(state.order,${i})">×</button></td>
+    </tr>`;}).join('')
+   + state.shortEnds.map((o,i)=>{const f=Number(o.feet)||0;return `
+    <tr>
+      <td><input data-k="se${i}l" value="${o.label}" oninput="state.shortEnds[${i}].label=this.value" style="font-style:italic">
+          <select style="margin-top:5px;font-size:11px;padding:5px 7px" onchange="state.shortEnds[${i}].proc=this.value;render()" title="Process for this short end">${Object.keys(PROCDEF).map(p=>`<option value="${p}" ${ (o.proc||'ecn2')===p?'selected':''}>${PROCDEF[p].name}</option>`).join('')}</select></td>
+      <td class="r"><input data-k="se${i}f" class="num" type="text" inputmode="decimal" value="${o.feet}" oninput="state.shortEnds[${i}].feet=this.value;render()" title="feet"></td>
+      <td class="r"><input data-k="se${i}c" class="num" type="text" inputmode="decimal" step="0.01" value="${o.cost}" oninput="state.shortEnds[${i}].cost=this.value;render()" title="total $"></td>
+      <td class="r"><span class="ft">${ft(f)}</span>${pct(f)}</td>
+      <td class="r"><span class="money">${money0(Number(o.cost)||0)}</span></td>
+      <td class="r"><button class="iconbtn" onclick="del(state.shortEnds,${i})">×</button></td>
+    </tr>`;}).join('');
+}
+function pickStock(i,key){
+  const [si,ri]=key.split('_').map(Number);
+  const r=STOCK[gauge()][si].rolls[ri];
+  state.order[i].key=key; state.order[i].len=r[0]; state.order[i].price=r[1];
+  render();
+}
+function renderScan(){
+  $('scanBody').innerHTML=state.scan.map((x,i)=>`
+    <tr>
+      <td><select onchange="pickScan(${i},this.value)">${SCANS.map((s,si)=>`<option value="${si}" ${s.n===x.res?'selected':''}>${s.n}</option>`).join('')}</select></td>
+      <td class="r"><input data-k="sc${i}f" class="num${state.scanUnlocked?'':' locked'}" type="text" inputmode="decimal" value="${x.feet}" ${state.scanUnlocked?'':'readonly tabindex="-1"'} oninput="state.scan[${i}].feet=this.value;render()" title="${state.scanUnlocked?'Manual override':'Locked to your stock order'}"></td>
+      <td class="r"><input data-k="sc${i}r" class="num" type="text" inputmode="decimal" step="0.01" value="${x.rate}" oninput="state.scan[${i}].rate=this.value;render()"></td>
+      <td class="r"><span class="money">${money0((Number(x.feet)||0)*(Number(x.rate)||0))}</span></td>
+      <td class="r">${state.scan.length>1?`<button class="iconbtn" onclick="del(state.scan,${i})">×</button>`:''}</td>
+    </tr>`).join('');
+}
+function pickScan(i,si){state.scan[i].res=SCANS[si].n; state.scan[i].rate=SCANS[si].rate; render();}
+function renderPrint(){
+  $('printBody').innerHTML=state.print.length?state.print.map((x,i)=>`
+    <tr>
+      <td><input data-k="pr${i}d" value="${x.desc}" oninput="state.print[${i}].desc=this.value"></td>
+      <td class="r"><input data-k="pr${i}f" class="num" type="text" inputmode="decimal" value="${x.feet}" oninput="state.print[${i}].feet=this.value;render()"></td>
+      <td class="r"><input data-k="pr${i}r" class="num" type="text" inputmode="decimal" step="0.01" value="${x.rate}" oninput="state.print[${i}].rate=this.value;render()"></td>
+      <td class="r"><span class="money">${money0((Number(x.feet)||0)*(Number(x.rate)||0))}</span></td>
+      <td class="r"><button class="iconbtn" onclick="del(state.print,${i})">×</button></td>
+    </tr>`).join(''):`<tr><td colspan="5" style="color:var(--dim);font-size:12px;padding:8px 6px">No print / film-out lines.</td></tr>`;
+}
+function renderFees(){
+  $('feeBody').innerHTML=state.fees.length?state.fees.map((x,i)=>`
+    <tr>
+      <td><input data-k="fe${i}n" list="feelist" value="${x.name}" oninput="state.fees[${i}].name=this.value;autoFee(${i},this.value)"></td>
+      <td class="r"><input data-k="fe${i}q" class="num" type="text" inputmode="decimal" value="${x.qty}" oninput="state.fees[${i}].qty=this.value;render()"></td>
+      <td class="r"><input data-k="fe${i}r" class="num" type="text" inputmode="decimal" step="0.01" value="${x.rate}" oninput="state.fees[${i}].rate=this.value;render()"></td>
+      <td class="r"><span class="money">${money0((Number(x.qty)||0)*(Number(x.rate)||0))}</span></td>
+      <td class="r"><button class="iconbtn" onclick="del(state.fees,${i})">×</button></td>
+    </tr>`).join(''):`<tr><td colspan="5" style="color:var(--dim);font-size:12px;padding:8px 6px">No additional fees.</td></tr>`;
+}
+function autoFee(i,name){const f=FEES.find(f=>f.n===name);if(f){state.fees[i].rate=f.rate;}render();}
+
+/* ---------- compact lock status (dev/scan) ---------- */
+function setGate(el, unlocked, have, need, gerund){
+  if(unlocked){ el.className='lockmsg unlocked'; el.innerHTML='Manual override — feet set by hand'; return; }
+  if(have<=0 && need<=0){ el.className='lockmsg bad'; el.innerHTML='Add needs &amp; an order'; return; }
+  const ok=have>=need && need>0;
+  el.className='lockmsg '+(ok?'ok':'bad');
+  el.innerHTML = ok
+    ? `Locked to order · ${gerund} <b>${ft(have)}</b>`
+    : `Locked to order · <b>${ft(have)}</b>, <b>${ft(Math.max(need-have,0))}</b> short of <b>${ft(need)}</b>`;
+}
+function toggleScanLock(){ state.scanUnlocked=$('scanUnlock').checked; render(); }
+
+/* ---------- gate + summary ---------- */
+/* keep focus + caret across re-renders so multi-digit entry works */
+function render(){
+  const a=document.activeElement;
+  const k=(a&&a.getAttribute)?a.getAttribute('data-k'):null;
+  let ss=null,se=null;
+  if(k){ try{ ss=a.selectionStart; se=a.selectionEnd; }catch(e){} }
+  _render();
+  if(k){
+    const el=document.querySelector('[data-k="'+k+'"]');
+    if(el){ el.focus(); if(ss!=null){ try{ el.setSelectionRange(ss,se); }catch(e){} } }
+  }
+}
+function _render(){
+  $('fmtHint').textContent=`${FMT[$('fmt').value].label} — ${fpf()} frames per foot. ${ft(fpf()*1)} ≈ 1 ft holds ${fpf()} frames; at ${$('projFps').value||24} fps that's ${(fpf()/(Number($('projFps').value)||24)).toFixed(1)} ft/sec on screen.`;
+
+  const need=neededFeet(), ord=orderedFeet();
+  // Scan footage tracks the order unless unlocked; dev is auto-split per process below
+  if(!state.scanUnlocked){ state.scan.forEach(s=>{ s.feet=Math.round(ord); }); }
+
+  renderNeeds(); renderOrder(); renderDev(); renderScan(); renderPrint(); renderFees();
+
+  const margin=ord-need, ok=ord>=need && need>0;
+  // gate
+  const g=$('gate'); g.className='gate '+(ok?'ok':'bad');
+  if(need===0){
+    g.className='gate bad';
+    g.querySelector('.dot').textContent='!';
+    g.querySelector('.msg').innerHTML='Enter your film needs above to begin.';
+  }else if(ok){
+    g.querySelector('.dot').textContent='✓';
+    g.querySelector('.msg').innerHTML=`Order covers the shoot. <b>${ft(ord)}</b> ordered vs <b>${ft(need)}</b> required — <b>${ft(margin)}</b> margin.`;
+  }else{
+    g.querySelector('.dot').textContent='!';
+    g.querySelector('.msg').innerHTML=`Short by <b>${ft(need-ord)}</b>. You've ordered <b>${ft(ord)}</b> of <b>${ft(need)}</b> required. Add stock to continue.`;
+  }
+  // development & scan track the order unless unlocked; flag if the order is short
+  setGate($('procGate'), state.devUnlocked, devGroups().reduce((s,g)=>s+g.feet,0), need, 'developing');
+  setGate($('scanGate'), state.scanUnlocked, state.scan.reduce((s,x)=>s+(Number(x.feet)||0),0), need, 'scanning');
+  // summary
+  $('sRaw').textContent=money(rawCost());
+  $('sProc').textContent=money(procCost());
+  $('sScan').textContent=money(scanCost());
+  $('sPrint').textContent=money(printCost());
+  $('sFees').textContent=money(feeCost());
+  $('sGrand').textContent=money(grand());
+  $('cReq').textContent=ft(need);
+  $('cOrd').textContent=ft(ord);
+  const mEl=$('cMar'); mEl.textContent=(margin>=0?'+':'')+ft(margin).replace('ft','')+' ft';
+  mEl.style.color=margin>=0?'var(--ink)':'var(--red)';
+  $('sideSpec').textContent=`${FMT[$('fmt').value].label} · ${$('projFps').value||24} fps · ${gauge()} stock`;
+}
+
+/* ---------- order & cost breakdown ---------- */
+const sec=t=>`<tr class="sec"><td colspan="3">${t}</td></tr>`;
+const li=(a,b,c)=>`<tr class="li"><td>${a}</td><td class="r">${b}</td><td class="r">${money(c)}</td></tr>`;
+const subt=(a,c)=>`<tr class="subt"><td class="lab">${a}</td><td></td><td>${money(c)}</td></tr>`;
+function stockName(key){const [si]=key.split('_').map(Number);return STOCK[gauge()][si].n;}
+function openBreakdown(){
+  const need=neededFeet(), ord=orderedFeet(), mg=ord-need;
+  $('bProj').textContent=$('pName').value||'Untitled';
+  $('bFmt').textContent=FMT[$('fmt').value].label;
+  $('bFps').textContent=($('projFps').value||24)+' fps';
+  $('bReq').textContent=ft(need);
+  const d=$('pDate').value?new Date($('pDate').value+'T00:00'):new Date();
+  $('bDate').textContent=d.toLocaleDateString('en-US',{year:'numeric',month:'short',day:'numeric'});
+  $('bSpec').innerHTML=`Required <b>${ft(need)}</b> &nbsp;·&nbsp; Ordered <b>${ft(ord)}</b> &nbsp;·&nbsp; Margin <b>${mg>=0?'+':'−'}${ft(Math.abs(mg))}</b> &nbsp;·&nbsp; Scan <b>${[...new Set(state.scan.map(s=>s.res))].join(', ')||'—'}</b>`;
+
+  let rows=sec('Film Needs');
+  const nl=state.needs.filter(l=>lineFeet(l)>0 || (Number(l.min)||0)>0);
+  if(nl.length){
+    nl.forEach(l=>{ rows+=`<tr class="li"><td>${l.label||'—'}</td><td class="r">${(Number(l.min)||0)} min · ${(Number(l.fps)||0)} fps · ${(Number(l.ratio)||0)}:1</td><td class="r">${ft(lineFeet(l))}</td></tr>`; });
+  } else {
+    rows+=`<tr class="li"><td colspan="3" style="color:var(--papermut)">No shooting time entered.</td></tr>`;
+  }
+
+  rows+=sec('Film Order');
+  const tot=ord;
+  const pctOf=f=>tot>0?` · ${(f/tot*100).toFixed(0)}%`:'';
+  const grp={};
+  state.order.forEach(o=>{const nm=stockName(o.key);const k=nm+'|'+o.len;grp[k]=grp[k]||{qty:0,cost:0,len:o.len,name:nm};grp[k].qty+=Number(o.qty)||0;grp[k].cost+=(Number(o.price)||0)*(Number(o.qty)||0);});
+  Object.values(grp).forEach(g=>{if(g.qty>0)rows+=li(g.name,`${g.qty} × ${g.len}ft  (${ft(g.qty*g.len)})${pctOf(g.qty*g.len)}`,g.cost);});
+  state.shortEnds.forEach(o=>{if((Number(o.feet)||0)>0||(Number(o.cost)||0)>0)rows+=li(o.label,`${ft(Number(o.feet)||0)}${pctOf(Number(o.feet)||0)}`,Number(o.cost)||0);});
+  if(rawCost()===0 && orderedFeet()===0) rows+=`<tr class="li"><td colspan="3" style="color:var(--papermut)">No stock ordered yet.</td></tr>`;
+  rows+=subt('Raw stock',rawCost());
+
+  const dgs=devGroups();
+  if(procCost()>0){
+    rows+=sec('Processing');
+    dgs.forEach(g=>{ if(g.total>0){ const st=Number(g.d.stops)||0, ppn=st!==0?`, ${st>0?'+':''}${st} stop ${st>0?'push':'pull'}`:''; rows+=li(g.name,`${ft(g.feet)} @ ${money(Number(g.d.rate)||0)}/ft${ppn}`,g.total); } });
+    rows+=subt('Processing',procCost());
+  }
+  if(scanCost()>0){
+    rows+=sec('Scan');
+    state.scan.forEach(s=>{const t=(Number(s.feet)||0)*(Number(s.rate)||0);if(t>0)rows+=li(s.res+' scan',`${ft(Number(s.feet)||0)} @ ${money(Number(s.rate)||0)}/ft`,t);});
+    rows+=subt('Scan',scanCost());
+  }
+  if(printCost()>0){
+    rows+=sec('Print / Film-out');
+    state.print.forEach(p=>{const t=(Number(p.feet)||0)*(Number(p.rate)||0);if(t>0)rows+=li(p.desc,`${ft(Number(p.feet)||0)} @ ${money(Number(p.rate)||0)}/ft`,t);});
+    rows+=subt('Print',printCost());
+  }
+  if(feeCost()>0){
+    rows+=sec('Additional Fees');
+    state.fees.forEach(f=>{const t=(Number(f.qty)||0)*(Number(f.rate)||0);if(t>0)rows+=li(f.name,`${f.qty} × ${money(Number(f.rate)||0)}`,t);});
+    rows+=subt('Fees',feeCost());
+  }
+  $('bBody').innerHTML=rows;
+  $('bGrand').textContent=money(grand());
+  $('overlay').classList.add('show');
+}
+function closeBreakdown(){$('overlay').classList.remove('show');}
+function printBreakdown(){
+  const title=($('pName').value||'Untitled').trim();
+  const d=new Date(), p=n=>String(n).padStart(2,'0');
+  const stamp=`${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())} ${p(d.getHours())}${p(d.getMinutes())}`;
+  const prev=document.title;
+  document.title=`Film Cost Calculator - ${title} ${stamp}`;
+  window.print();
+  setTimeout(()=>{document.title=prev;},800);
+}
+
+/* ---------- init ---------- */
+(function init(){
+  $('pDate').valueAsDate=new Date();
+  $('priceDate').value='2026-04-10';
+  const dl=document.createElement('datalist');dl.id='feelist';dl.innerHTML=FEES.map(f=>`<option value="${f.n}">`).join('');document.body.appendChild(dl);
+  addOrder(); state.order[0].qty=0; // one stock line, zero by default
+  render();
+})();
+</script>
+</body>
+</html>
